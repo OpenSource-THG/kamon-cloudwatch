@@ -20,6 +20,12 @@ val version = "0.0.1"
 val scalaVersion = "2.12.5"
 val kamonVersion = "1.1.0"
 
+bintrayOrganization := Some("opensource-thg")
+licenses := List(
+  ("Apache License, Version 2.0",
+    url("https://www.apache.org/licenses/LICENSE-2.0"))
+)
+
 libraryDependencies ++= Seq(
   "com.amazonaws" % "aws-java-sdk" % "1.11.312",
   "io.kamon" %% "kamon-core" % kamonVersion,
