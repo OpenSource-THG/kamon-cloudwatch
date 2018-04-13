@@ -10,8 +10,10 @@ libraryDependencies ++= Seq(
 
   "io.kamon" %% "kamon-core" % kamonVersion,
   "io.kamon" %% "kamon-akka-2.5" % "1.0.1",
-  "com.thg.opensource.kamon.cloudwatch" %% "kamon-cloudwatch" % "0.0.1"
+  "com.thg.opensource.kamon.cloudwatch" %% "kamon-cloudwatch" % "0.0.2"
 )
+
+resolvers += Resolver.bintrayRepo("opensource-thg", "opensource-THG")
 ```
 
 ## SBT Plugin configuration
