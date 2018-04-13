@@ -15,9 +15,10 @@
   */
 
 name := "kamon-cloudwatch"
+organization := "com.thg.opensource"
+version := "0.0.1"
 
-val version = "0.0.1"
-val scalaVersion = "2.12.5"
+scalaVersion := "2.12.5"
 val kamonVersion = "1.1.0"
 
 bintrayOrganization := Some("opensource-thg")
