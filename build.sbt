@@ -22,7 +22,7 @@ val kamonVersion = "1.1.0"
 
 bintrayOrganization := Some("opensource-thg")
 licenses := List(
-  ("Apache License, Version 2.0",
+  ("Apache-2.0",
     url("https://www.apache.org/licenses/LICENSE-2.0"))
 )
 
