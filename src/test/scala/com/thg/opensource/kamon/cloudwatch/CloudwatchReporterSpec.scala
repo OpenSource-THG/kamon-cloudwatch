@@ -18,28 +18,26 @@ package com.thg.opensource.kamon.cloudwatch
 
 import java.time.Instant
 
-import com.amazonaws.services.cloudwatch.{AmazonCloudWatch, AmazonCloudWatchAsync}
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync
 import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest
-import kamon.metric.{MetricDistribution, MetricValue, MetricsSnapshot, PeriodSnapshot}
+import kamon.metric._
 import org.mockito.Matchers
-import org.scalatest.{BeforeAndAfter, FlatSpec}
+import org.scalatest.FlatSpec
 import org.scalatest.mockito.MockitoSugar
 import org.mockito.Mockito.{times, verify}
 
-class CloudwatchReporterSpec extends FlatSpec with MockitoSugar with BeforeAndAfter {
+class CloudwatchReporterSpec extends FlatSpec with MockitoSugar {
 
-  var reporter: CloudwatchReporter = _
-  var config: CloudwatchReporter.Configuration = _
-  var cloudwatchClient: AmazonCloudWatchAsync = _
+  private val config = CloudwatchReporter.Configuration(namespace = "test")
 
-  before {
-    cloudwatchClient = mock[AmazonCloudWatchAsync]
-    config = CloudwatchReporter.Configuration(namespace = "test")
-    reporter = new CloudwatchReporter(cloudwatchClient, config)
-  }
-
-  "reportPeriodSnapshot" should "interact with cloudwatchclient when metrics" in {
-    val metric = MetricValue("test-metrics",null,null,1l)
+  it should "interact with cloudwatchclient when metrics" in {
+    val cloudwatchClient = mock[AmazonCloudWatchAsync]
+    val reporter = new CloudwatchReporter(cloudwatchClient, config)
+    val metric = MetricValue("test-metrics",
+      Map.empty[String,String],
+      new MeasurementUnit(MeasurementUnit.Dimension.Time, MeasurementUnit.Magnitude("a",1.0)),
+      1l
+    )
     val periodSnapshot = PeriodSnapshot(Instant.now(),
       Instant.now(),
       MetricsSnapshot(Seq.empty[MetricDistribution],
@@ -53,7 +51,9 @@ class CloudwatchReporterSpec extends FlatSpec with MockitoSugar with BeforeAndAf
     verify(cloudwatchClient, times(1)).putMetricDataAsync(Matchers.any[PutMetricDataRequest])
   }
 
-  "reportPeriodSnapshot" should "not interact with cloudwatchclient when no metrics" in {
+  it should "not interact with cloudwatchclient when no metrics" in {
+    val cloudwatchClient = mock[AmazonCloudWatchAsync]
+    val reporter = new CloudwatchReporter(cloudwatchClient, config)
     val periodSnapshot = PeriodSnapshot(Instant.now(),
       Instant.now(),
       MetricsSnapshot(Seq.empty[MetricDistribution],
@@ -62,7 +62,6 @@ class CloudwatchReporterSpec extends FlatSpec with MockitoSugar with BeforeAndAf
         Seq.empty[MetricValue]
       )
     )
-    val reporter = new CloudwatchReporter(cloudwatchClient, config)
     reporter.reportPeriodSnapshot(periodSnapshot)
 
     verify(cloudwatchClient, times(0)).putMetricDataAsync(Matchers.any[PutMetricDataRequest])
