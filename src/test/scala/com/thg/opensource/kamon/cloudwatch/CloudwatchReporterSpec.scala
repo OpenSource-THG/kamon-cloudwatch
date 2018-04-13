@@ -18,7 +18,7 @@ package com.thg.opensource.kamon.cloudwatch
 
 import java.time.Instant
 
-import com.amazonaws.services.cloudwatch.AmazonCloudWatch
+import com.amazonaws.services.cloudwatch.{AmazonCloudWatch, AmazonCloudWatchAsync}
 import com.amazonaws.services.cloudwatch.model.PutMetricDataRequest
 import kamon.metric.{MetricDistribution, MetricValue, MetricsSnapshot, PeriodSnapshot}
 import org.mockito.Matchers
@@ -30,11 +30,11 @@ class CloudwatchReporterSpec extends FlatSpec with MockitoSugar with BeforeAndAf
 
   var reporter: CloudwatchReporter = _
   var config: CloudwatchReporter.Configuration = _
-  var cloudwatchClient: AmazonCloudWatch = _
+  var cloudwatchClient: AmazonCloudWatchAsync = _
 
   before {
-    cloudwatchClient = mock[AmazonCloudWatch]
-    config = CloudwatchReporter.Configuration(namespace = "test")
+    cloudwatchClient = mock[AmazonCloudWatchAsync]
+    config = CloudwatchReporter.Configuration(namespace = "test", debugToConsole = true)
     reporter = new CloudwatchReporter(cloudwatchClient, config)
   }
 
@@ -50,7 +50,7 @@ class CloudwatchReporterSpec extends FlatSpec with MockitoSugar with BeforeAndAf
     )
     reporter.reportPeriodSnapshot(periodSnapshot)
 
-    verify(cloudwatchClient, times(1)).putMetricData(Matchers.any[PutMetricDataRequest])
+    verify(cloudwatchClient, times(1)).putMetricDataAsync(Matchers.any[PutMetricDataRequest])
   }
 
   "reportPeriodSnapshot" should "not interact with cloudwatchclient when no metrics" in {
@@ -65,7 +65,7 @@ class CloudwatchReporterSpec extends FlatSpec with MockitoSugar with BeforeAndAf
     val reporter = new CloudwatchReporter(cloudwatchClient, config)
     reporter.reportPeriodSnapshot(periodSnapshot)
 
-    verify(cloudwatchClient, times(0)).putMetricData(Matchers.any[PutMetricDataRequest])
+    verify(cloudwatchClient, times(0)).putMetricDataAsync(Matchers.any[PutMetricDataRequest])
   }
 
 }

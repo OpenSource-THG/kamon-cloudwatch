@@ -19,23 +19,22 @@ package com.thg.opensource.kamon.cloudwatch
 import java.time.Duration
 import java.util
 
-import com.amazonaws.services.cloudwatch.model.{MetricDatum, PutMetricDataRequest}
-import com.amazonaws.services.cloudwatch.{AmazonCloudWatch, AmazonCloudWatchClientBuilder}
-import com.thg.opensource.kamon.cloudwatch.CloudwatchReporter.Configuration
+import com.amazonaws.services.cloudwatch.model.{MetricDatum, PutMetricDataRequest, StatisticSet}
+import com.amazonaws.services.cloudwatch.AmazonCloudWatchAsync
 import com.typesafe.config.Config
-import kamon.metric.{MetricValue, PeriodSnapshot, PeriodSnapshotAccumulator}
+import kamon.metric._
 import kamon.{Kamon, MetricReporter}
 import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
 object CloudwatchReporter {
-  case class Configuration(namespace: String)
+  case class Configuration(namespace: String, debugToConsole: Boolean)
 
-  def apply(amazonCloudWatch: AmazonCloudWatch, cfg: CloudwatchReporter.Configuration) = new CloudwatchReporter(amazonCloudWatch, cfg)
+  def apply(amazonCloudWatch: AmazonCloudWatchAsync, cfg: CloudwatchReporter.Configuration) = new CloudwatchReporter(amazonCloudWatch, cfg)
 }
 
-class CloudwatchReporter(amazonCloudWatch: AmazonCloudWatch, var config: CloudwatchReporter.Configuration) extends MetricReporter {
+class CloudwatchReporter(amazonCloudWatch: AmazonCloudWatchAsync, var config: CloudwatchReporter.Configuration) extends MetricReporter {
 
   private val logger = LoggerFactory.getLogger(classOf[CloudwatchReporter])
   private val snapshotAccumulator = new PeriodSnapshotAccumulator(Duration.ofDays(365 * 5), Duration.ZERO)
@@ -56,14 +55,35 @@ class CloudwatchReporter(amazonCloudWatch: AmazonCloudWatch, var config: Cloudwa
   override def reportPeriodSnapshot(snapshot: PeriodSnapshot) = {
     snapshotAccumulator.add(snapshot)
     val current = snapshotAccumulator.peek()
-    val putMetricDataRequest: PutMetricDataRequest = new PutMetricDataRequest()
-
-    putMetricDataRequest.setNamespace(config.namespace)
 
     current.metrics.counters.foreach(m => {
-      logger.info(s"${m.name} => ${m.value}")
+      if (config.debugToConsole) {
+        logger.info(s"${m.name} => ${m.value}")
+      }
+      val putMetricDataRequest = new PutMetricDataRequest()
+      putMetricDataRequest.setNamespace(config.namespace)
       putMetricDataRequest.setMetricData(createMetricDatum(m))
-      amazonCloudWatch.putMetricData(putMetricDataRequest)
+      try {
+        amazonCloudWatch.putMetricDataAsync(putMetricDataRequest)
+      } catch {
+        case e: Exception =>
+          logger.error(s"Unable to push metric to cloudwatch: ${e.getMessage}")
+      }
+    })
+
+    current.metrics.rangeSamplers.foreach(s => {
+      if (config.debugToConsole) {
+        logger.info(s"${s.name}")
+      }
+      val putMetricDataRequest = new PutMetricDataRequest()
+      putMetricDataRequest.setNamespace(config.namespace)
+      putMetricDataRequest.setMetricData(createStatisticsSet(s))
+      try {
+        amazonCloudWatch.putMetricDataAsync(putMetricDataRequest)
+      } catch {
+        case e: Exception =>
+          logger.error(s"Unable to push statistic set to cloudwatch: ${e.getMessage}")
+      }
     })
   }
 
@@ -71,7 +91,8 @@ class CloudwatchReporter(amazonCloudWatch: AmazonCloudWatch, var config: Cloudwa
     val cloudwatchConfig = config.getConfig("kamon.cloudwatch")
 
     CloudwatchReporter.Configuration(
-      namespace = cloudwatchConfig.getString("namespace")
+      namespace = cloudwatchConfig.getString("namespace"),
+      debugToConsole = cloudwatchConfig.getBoolean("debug-to-console")
     )
   }
 
@@ -79,6 +100,20 @@ class CloudwatchReporter(amazonCloudWatch: AmazonCloudWatch, var config: Cloudwa
     val d = new MetricDatum()
       .withMetricName(m.name)
       .withValue(m.value.toDouble)
+
+    List(d).asJavaCollection
+  }
+
+  private def createStatisticsSet(md: MetricDistribution): util.Collection[MetricDatum] = {
+    val ss = new StatisticSet()
+      .withMaximum(md.distribution.max.toDouble)
+      .withMinimum(md.distribution.min.toDouble)
+      .withSampleCount(md.distribution.count.toDouble)
+      .withSum(md.distribution.sum.toDouble)
+
+    val d = new MetricDatum()
+      .withMetricName(md.name)
+      .withStatisticValues(ss)
 
     List(d).asJavaCollection
   }
