@@ -1,3 +1,6 @@
+## Build status
+[![Build Status](https://travis-ci.org/OpenSource-THG/kamon-cloudwatch.svg?branch=master)](https://travis-ci.org/OpenSource-THG/kamon-cloudwatch)
+
 ## SBT dependency
 Add the following to `build.sbt`:
 ```scala
