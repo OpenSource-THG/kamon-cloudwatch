@@ -34,7 +34,7 @@ class CloudwatchReporterSpec extends FlatSpec with MockitoSugar with BeforeAndAf
 
   before {
     cloudwatchClient = mock[AmazonCloudWatchAsync]
-    config = CloudwatchReporter.Configuration(namespace = "test", debugToConsole = true)
+    config = CloudwatchReporter.Configuration(namespace = "test")
     reporter = new CloudwatchReporter(cloudwatchClient, config)
   }
 

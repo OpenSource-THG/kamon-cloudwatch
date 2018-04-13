@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory
 import scala.collection.JavaConverters._
 
 object CloudwatchReporter {
-  case class Configuration(namespace: String, debugToConsole: Boolean)
+  case class Configuration(namespace: String)
 
   def apply(amazonCloudWatch: AmazonCloudWatchAsync, cfg: CloudwatchReporter.Configuration) = new CloudwatchReporter(amazonCloudWatch, cfg)
 }
@@ -57,9 +57,7 @@ class CloudwatchReporter(amazonCloudWatch: AmazonCloudWatchAsync, var config: Cl
     val current = snapshotAccumulator.peek()
 
     current.metrics.counters.foreach(m => {
-      if (config.debugToConsole) {
-        logger.info(s"${m.name} => ${m.value}")
-      }
+      logger.debug(s"${m.name} => ${m.value}")
       val putMetricDataRequest = new PutMetricDataRequest()
       putMetricDataRequest.setNamespace(config.namespace)
       putMetricDataRequest.setMetricData(createMetricDatum(m))
@@ -72,9 +70,7 @@ class CloudwatchReporter(amazonCloudWatch: AmazonCloudWatchAsync, var config: Cl
     })
 
     current.metrics.rangeSamplers.foreach(s => {
-      if (config.debugToConsole) {
-        logger.info(s"${s.name}")
-      }
+      logger.debug(s"${s.name}")
       val putMetricDataRequest = new PutMetricDataRequest()
       putMetricDataRequest.setNamespace(config.namespace)
       putMetricDataRequest.setMetricData(createStatisticsSet(s))
@@ -91,8 +87,7 @@ class CloudwatchReporter(amazonCloudWatch: AmazonCloudWatchAsync, var config: Cl
     val cloudwatchConfig = config.getConfig("kamon.cloudwatch")
 
     CloudwatchReporter.Configuration(
-      namespace = cloudwatchConfig.getString("namespace"),
-      debugToConsole = cloudwatchConfig.getBoolean("debug-to-console")
+      namespace = cloudwatchConfig.getString("namespace")
     )
   }
 
