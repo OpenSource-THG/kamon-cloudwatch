@@ -19,6 +19,7 @@ organization := "com.thg.opensource"
 version := "0.0.2"
 
 scalaVersion := "2.12.5"
+crossScalaVersions := Seq("2.11.8", "2.12.5")
 val kamonVersion = "1.1.0"
 
 bintrayOrganization := Some("opensource-thg")
